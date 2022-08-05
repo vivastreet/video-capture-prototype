@@ -85,6 +85,7 @@ canvas {
     border-radius: 10px;
     border: none;
     background-color: #c00;
+  border-bottom-color: red;
 }
 #controls span.record button:active {
     border: 2px solid red;
