@@ -124,7 +124,9 @@
     recorder.ondataavailable = (event) => data.push(event.data);
     recorder.start();
 
-    log(`${recorder.state} for ${lengthInMS / 1000} seconds…`);
+    logElement.innerHTML = '';
+    countdown();
+
 
     let stopped = new Promise((resolve, reject) => {
       recorder.onstop = resolve;
@@ -136,7 +138,7 @@
         if (recorder.state === "recording") {
           recorder.stop();
           logElement.style.backgroundColor = 'green';
-          logElement.innerHTML = "recording complete";
+          logElement.innerHTML = "Recording complete";
           spinner.style.display = 'none';
           videoOverlay.style.backgroundImage = "url('/src/htdocs/images/placeholder.png')";
         }
@@ -148,7 +150,19 @@
       recorded
     ]).then(() => data);
   };
+  const countdown = () => {
+    logElement.style.display = 'flex';
+    logElement.style.backgroundColor = 'red';
+    spinner.style.display = 'block';
+    let timeleft = 10;
+    let downloadTimer = setInterval(function(){
+      if(timeleft > 0){
+        logElement.innerHTML = "Recording for " + timeleft + " seconds";
+      }
+      timeleft -= 1;
+    }, 1000);
 
+  }
   record.addEventListener("click", () => {
     initialise();
     navigator.mediaDevices.getUserMedia({
@@ -193,7 +207,7 @@
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
-        if (detections.detection.score > 0.95) {
+        if (detections.detection.score > 0.97) {
           clearInterval(checkVideo);
           captureImage();
         }
@@ -207,7 +221,6 @@
   function log(msg) {
     logElement.style.display = 'flex';
     logElement.style.backgroundColor = 'red';
-    spinner.style.display = 'flex';
     logElement.innerHTML = `${msg}\n`;
   }
 
