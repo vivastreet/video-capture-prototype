@@ -1,130 +1,218 @@
+// const FaceDetect =
 (() => {
-    const video = document.querySelector('video');
-    const record = document.querySelector('.record');
-    const videoText = document.querySelector('.text');
-    const capturedImage = document.querySelector('#captured-image')
-    const videoOverlay = document.getElementById('video-overlay');
-    const overlay = document.getElementById('overlay');
-    const constraints = {
-        audio: false,
-        video: {
-            width: 720,
-            height: 540
+  const video = document.querySelector('video');
+  const record = document.querySelector('.record');
+  const capturedImage = document.querySelector('#captured-image');
+  const capturedMovieSrc = document.querySelector('#captured-movie-source');
+  const videoOverlay = document.getElementById('video-overlay');
+  const overlay = document.getElementById('overlay');
+  const spinner = document.querySelector('.spinner')
+  let recording = document.getElementById("recording");
+  let flash = document.querySelector("#flash");
+  let downloadButton = document.getElementById("downloadButton");
+  let logElement = document.getElementById("log");
+  let recordingTimeMS = 10000;
+  let canvas;
+
+  const constraints = {
+    audio: false,
+    video: {
+      width: 1280,
+      height: 720
+    }
+  };
+
+  const getUserMedia = (stop) => {
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then((stream) => {
+        const videoTracks = stream.getTracks();
+        console.log('Got stream with constraints:', constraints);
+        console.log(`Using video device: ${videoTracks[0].label}`);
+        stream.onremovetrack = () => {
+          console.log('Stream ended');
+        };
+        if (stop) {
+          const [track] = videoTracks;
+          track.stop();
+          stream.removeTrack(videoTracks[0]);
+          stream = null;
         }
-    };
-
-    let canvas;
-
-    const getUserMedia = (stop) => {
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then((stream) => {
-                const videoTracks = stream.getVideoTracks();
-                console.log('Got stream with constraints:', constraints);
-                console.log(`Using video device: ${videoTracks[0].label}`);
-                stream.onremovetrack = () => {
-                    console.log('Stream ended');
-                };
-                if (stop) {
-                    stream = null;
-                }
-                video.srcObject = stream;
-
-            })
-            .catch((error) => {
-                if (error.name === 'ConstraintNotSatisfiedError') {
-                    console.error(
-                        `The resolution ${constraints.video.width.exact}x${constraints.video.height.exact} px is not supported by your device.`
-                    );
-                } else if (error.name === 'PermissionDeniedError') {
-                    console.error(
-                        'Permissions have not been granted to use your camera and ' +
-                        'microphone, you need to allow the page access to your devices in ' +
-                        'order for the demo to work.'
-                    );
-                } else {
-                    console.error(`getUserMedia error: ${error.name}`, error);
-                }
-            });
-    }
-
-    const initialise = () => {
-        Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-            faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-            faceapi.nets.faceExpressionNet.loadFromUri('/models')
-        ]).then(startVideo);
-    };
-
-    const startVideo = () => {
-        console.log('start recording');
-        videoText.innerHTML='Click the record button and  <br/>place your face in the frame outlined';
-        videoOverlay.style.background = 'transparent';
-        overlay.style.display = 'flex';
-        hideShowElements(false);
-        getUserMedia(false);
-    };
-    const stopVideo = () => {
-        console.log('stop recording');
-        hideShowElements(true);
-        videoOverlay.style.backgroundImage = "url('/src/htdocs/images/placeholder.png')";
-
-        clearCanvas();
-        getUserMedia(true);
-    }
-
-    const takePicture = () => {
-        console.log('take a picture');
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        capturedImage.src = canvas.toDataURL('image/png');
-        stopVideo();
-    };
-
-    const clearCanvas = () => {
-        let canvases = document.getElementsByTagName('canvas');
-        for (let i = canvases.length - 1; i >= 0; i -= 1) {
-            canvases[i].parentNode.removeChild(canvases[i]);
-        }
-    };
-
-    const hideShowElements = (val) => {
-        let hide = !val ? 'flex' : 'none'
-        let show = val  ? 'flex' : 'none'
-        videoText.style.display = show;
-        record.style.display = show;
-        overlay.style.display = hide;
-    }
-
-    record.addEventListener('click', () => {
-        initialise();
-    })
-
-    video.addEventListener('play', async () => {
-        overlay.style.display = 'none';
-        canvas = await faceapi.createCanvasFromMedia(video);
-        document.body.append(canvas);
-        const displaySize = {width: video.width, height: video.height}
-        faceapi.matchDimensions(canvas, displaySize);
-        const checkVideo = setInterval(async () => {
-
-            const detections = await faceapi.detectSingleFace(video,
-                new faceapi.TinyFaceDetectorOptions({minConfidence: 0.99})).withFaceLandmarks().withFaceExpressions();
-            if (detections) {
-                const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                console.log(detections);
-                if (detections.detection.score > 0.98) {
-                    clearInterval(checkVideo);
-                    takePicture();
-                }
-
-                console.log('Face detected with score of: ', resizedDetections.detection.score);
-                faceapi.draw.drawDetections(canvas, resizedDetections);
-                faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-                // faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
-
-            }
-        }, 100);
+      }).catch((error) => {
+      if (error.name === 'ConstraintNotSatisfiedError') {
+        console.error(
+          `The resolution ${constraints.video.width.exact}x${constraints.video.height.exact} px is not supported by your device.`
+        );
+      } else if (error.name === 'PermissionDeniedError') {
+        console.error(
+          'Permissions have not been granted to use your camera and ' +
+          'microphone, you need to allow the page access to your devices in ' +
+          'order for the demo to work.'
+        );
+      } else {
+        console.error(`getUserMedia error: ${error.name}`, error);
+      }
     });
+  };
+
+  const initialise = () => {
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+      faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+      faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+      faceapi.nets.faceExpressionNet.loadFromUri('/models')
+    ]).then(startVideo);
+  };
+
+  const startVideo = () => {
+    videoOverlay.style.background = 'transparent';
+    overlay.style.display = 'flex';
+    hideShowElements(false);
+    getUserMedia(false);
+  };
+
+  const stopVideo = () => {
+    hideShowElements(true);
+    clearCanvas();
+    getUserMedia(true);
+  };
+
+  const captureImage = () => {
+    doFlash();
+    console.log('still image captured');
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    capturedImage.src = canvas.toDataURL('image/png');
+    let imagePayload = {image: capturedImage.src};
+    stopVideo();
+  };
+
+  const clearCanvas = () => {
+    let canvases = document.getElementsByTagName('canvas');
+    for (let i = canvases.length - 1; i >= 0; i -= 1) {
+      canvases[i].parentNode.removeChild(canvases[i]);
+    }
+  };
+
+  const hideShowElements = (val) => {
+    let hide = !val ? 'flex' : 'none';
+    let show = val ? 'flex' : 'none';
+    record.style.display = show;
+    overlay.style.display = hide;
+  };
+
+  const doFlash = () => {
+    flash.className = 'flash-on';
+    let millisecondsToWait = 100;
+    setTimeout(function () {
+      flash.className = 'flash-off';
+    }, millisecondsToWait);
+  };
+
+  const blobToBase64 = blob => {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    return new Promise(resolve => {
+      reader.onloadend = () => {
+        resolve(reader.result);
+      };
+    });
+  };
+
+  const startRecording = (stream, lengthInMS) => {
+    let recorder = new MediaRecorder(stream);
+    let data = [];
+
+    recorder.ondataavailable = (event) => data.push(event.data);
+    recorder.start();
+
+    log(`${recorder.state} for ${lengthInMS / 1000} seconds…`);
+
+    let stopped = new Promise((resolve, reject) => {
+      recorder.onstop = resolve;
+      recorder.onerror = (event) => reject(event.name);
+    });
+
+    let recorded = wait(lengthInMS).then(
+      () => {
+        if (recorder.state === "recording") {
+          recorder.stop();
+          logElement.style.backgroundColor = 'green';
+          logElement.innerHTML = "recording complete";
+          spinner.style.display = 'none';
+          videoOverlay.style.backgroundImage = "url('/src/htdocs/images/placeholder.png')";
+        }
+      },
+    );
+
+    return Promise.all([
+      stopped,
+      recorded
+    ]).then(() => data);
+  };
+
+  record.addEventListener("click", () => {
+    initialise();
+    navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    }).then((stream) => {
+      video.srcObject = stream;
+      downloadButton.href = stream;
+      video.captureStream = video.captureStream || video.mozCaptureStream;
+      return new Promise((resolve) => video.onplaying = resolve);
+    }).then(() => startRecording(video.captureStream(), recordingTimeMS))
+      .then((recordedChunks) => {
+        let recordedBlobMP4 = new Blob(recordedChunks, {type: "video/mp4"});
+        recording.src = URL.createObjectURL(recordedBlobMP4);
+        downloadButton.href = recording.src;
+        downloadButton.download = "RecordedVideo.mp4";
+
+        blobToBase64(recordedBlobMP4).then(res => {
+          capturedMovieSrc.src = res
+        });
+      })
+      .catch((error) => {
+        if (error.name === "NotFoundError") {
+          log("Camera or microphone not found. Can't record.");
+        } else {
+          log(error);
+        }
+      });
+  }, false);
+
+  video.addEventListener('play', () => {
+    overlay.style.display = 'none';
+    canvas = faceapi.createCanvasFromMedia(video);
+    document.body.append(canvas);
+    const displaySize = {width: video.width, height: video.height}
+    faceapi.matchDimensions(canvas, displaySize);
+    const checkVideo = setInterval(async () => {
+
+      const detections = await faceapi.detectSingleFace(video,
+        new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
+      if (detections) {
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+        if (detections.detection.score > 0.95) {
+          clearInterval(checkVideo);
+          captureImage();
+        }
+        faceapi.draw.drawDetections(canvas, resizedDetections);
+        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+      }
+    }, 100);
+  });
+
+  function log(msg) {
+    logElement.style.display = 'flex';
+    logElement.style.backgroundColor = 'red';
+    spinner.style.display = 'flex';
+    logElement.innerHTML = `${msg}\n`;
+  }
+
+  function wait(delayInMS) {
+    return new Promise((resolve) => setTimeout(resolve, delayInMS));
+  }
 
 })();

@@ -20,26 +20,69 @@
   <script defer type="text/javascript" src="js/face-api.min.js"></script>
   <script defer type="text/javascript" src="js/video.js"></script>
 
-  <meta name="theme-color" content="#fafafa">
 </head>
-<body>
+
 <section>
+  <heading>
+    <h3>Age Verification</h3>
+    <ul>
+      <li>Place your face in the frame outlined</li>
+      <li>Click on the "Record" button</li>
+      <li>Wait a few seconds until verification is completed</li>
+    </ul>
+  </heading>
+
   <div id="camera">
     <div class="video-container">
+      <div id="flash" class="flash-off"></div>
       <video id="video" width="450" height="350" autoplay muted></video>
       <div id="video-overlay">
-        <div class="border"></div>
-        <div class="text">Click the record button and <br/>place your face in the frame outlined</div>
+        <div class="spinner">
+          <div class="clearfix">
+            <div class="spinner-border float-right" role="status">
+              <span class="sr-only">Loading...</span>
+            </div>
+          </div>
+        </div>
+        <div class="faceborder"></div>
+        <div id="log">
+          <div class="spinner-grow" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
       </div>
     </div>
     <div id="controls">
       <span class="record"><button> </button> Record</span>
     </div>
   </div>
-  <div id="capture-container"><img src="images/captured-placeholder.png" id="captured-image" alt="captured-image"></div>
+  <div id="capture-container">
+    <img src="images/captured-placeholder.png" id="captured-image" alt="captured-image">
+    <video controls>
+      <source id="captured-movie-source" type="video/mp4">
+    </video>
+  </div>
+
+
 </section>
+<body>
+
 <div id="overlay">
   <div class="loader"></div>
 </div>
+
+<div class="hidden">
+  <div id="stopButton" class="button">
+    Stop Recording
+  </div>
+  <h2>Recording</h2>
+  <video id="recording" width="1280" height="720" controls></video>
+  <a id="downloadButton" class="button">
+    Download
+  </a>
+</div>
+
+
+
 </body>
 </html>
